@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tauri App</title>
@@ -9,15 +10,23 @@
   </head>
 
   <body>
-    <main class="container">
-      <h1>Audio Extractor</h1>
-      <p>Paste a YouTube URL below to extract high-quality audio directly to your NAS.</p>
+    <main class="mac-body">
+      <div class="container">
+        <h1>Audio Extractor</h1>
+        <p>Paste a YouTube URL below to extract high-quality audio directly to your NAS.</p>
 
-      <form class="row" id="extract-form">
-        <input id="url-input" type="url" placeholder="https://youtube.com/watch?v=..." required style="flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem;" />
-        <button type="submit">Extract Audio</button>
-      </form>
-      <p id="status-msg"></p>
+        <form class="row" id="extract-form">
+          <input id="url-input" type="url" placeholder="https://youtube.com/watch?v=..." required style="flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem;" />
+          <button type="submit">Extract Audio</button>
+        </form>
+        <p id="status-msg"></p>
+      </div>
+      <div class="mac-bottom">
+        <div class="floppy-drive">
+          <div class="floppy-slot"></div>
+          <div class="floppy-button"></div>
+        </div>
+      </div>
     </main>
   </body>
 </html>

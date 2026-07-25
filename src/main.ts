@@ -8,7 +8,7 @@ function extractAudio() {
     const url = urlInputEl.value;
     console.log("Extracting audio for URL:", url);
     if (statusMsgEl) {
-      statusMsgEl.textContent = `Starting extraction for: ${url}`;
+      statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...`;
     }
   }
 }
