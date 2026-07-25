@@ -9,7 +9,7 @@ async function extractAudio() {
   if (urlInputEl && statusMsgEl) {
     const url = urlInputEl.value;
     console.log("Extracting audio for URL:", url);
-    
+
     statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...`;
     if (extractBtnEl) extractBtnEl.disabled = true;
 
@@ -52,7 +52,7 @@ window.addEventListener("DOMContentLoaded", () => {
   urlInputEl = document.querySelector("#url-input");
   statusMsgEl = document.querySelector("#status-msg");
   extractBtnEl = document.querySelector("button[type='submit']");
-  
+
   setupEngineLock();
 
   document.querySelector("#extract-form")?.addEventListener("submit", (e) => {
@@ -70,5 +70,29 @@ window.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       if (statusMsgEl) statusMsgEl.innerHTML = `❌ Error updating: ${e}`;
     }
+  });
+
+  const viewSizes = [
+    { name: 'View: Large', width: 950, height: 950, scale: 1.0 },
+    { name: 'View: Small', width: 665, height: 720, scale: 0.70 }
+  ];
+  let currentSizeIndex = 0;
+
+  document.querySelector("#view-btn")?.addEventListener("click", async (e) => {
+    currentSizeIndex = (currentSizeIndex + 1) % viewSizes.length;
+    const newSize = viewSizes[currentSizeIndex];
+
+    // Use CSS zoom on the body so EVERYTHING scales perfectly together (menu bar, padding, casing)
+    (document.body.style as any).zoom = newSize.scale;
+
+    // Resize the Tauri window so it tightly wraps the newly scaled content
+    try {
+      await invoke("resize_window", { width: newSize.width, height: newSize.height });
+    } catch (err) {
+      console.error("Failed to resize window:", err);
+    }
+
+    // Update button text
+    (e.target as HTMLElement).innerText = newSize.name;
   });
 });

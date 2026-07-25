@@ -4,7 +4,7 @@ use tauri::{AppHandle, Manager};
 use log::{info, error, debug, warn};
 
 #[tauri::command]
-pub fn start_extraction(app: AppHandle, url: String) -> Result<String, String> {
+pub async fn start_extraction(app: AppHandle, url: String) -> Result<String, String> {
     let nas_root = Path::new("/Volumes/data/Media/Music/");
     debug!("Validating NAS Root at {:?}", nas_root);
     if !nas_root.exists() {
@@ -41,13 +41,18 @@ pub fn start_extraction(app: AppHandle, url: String) -> Result<String, String> {
 
     match result {
         Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let combined = format!("{}\n{}", stdout, stderr).trim().to_string();
+            
             if output.status.success() {
                 info!("Extraction process finished successfully.");
+                info!("yt-dlp extraction output:\n{}", combined);
                 Ok("Extraction completed successfully.".to_string())
             } else {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                error!("Extraction failed with exit code {}: \n{}", output.status, stderr);
-                Err(format!("Extraction failed:\n{}", stderr))
+                error!("Extraction failed with exit code {}", output.status);
+                error!("yt-dlp extraction output:\n{}", combined);
+                Err(format!("Extraction failed:\n{}", combined))
             }
         }
         Err(e) => {

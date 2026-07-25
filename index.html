@@ -1,39 +1,42 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/src/styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/src/main.ts" defer></script>
-  </head>
 
-  <body>
-    <div class="mac-menu-bar">
-      <span class="menu-item apple-icon"></span>
-      <span class="menu-item">File</span>
-      <span class="menu-item">Edit</span>
-      <span class="menu-item">View</span>
-      <span class="menu-item" id="update-btn">Check for Updates</span>
+<head>
+  <meta charset="UTF-8" />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tauri App</title>
+  <script type="module" src="/src/main.ts" defer></script>
+</head>
+
+<body>
+  <div class="mac-menu-bar">
+    <span class="menu-item apple-icon"></span>
+    <span class="menu-item">File</span>
+    <span class="menu-item">Edit</span>
+    <span class="menu-item" id="view-btn">View</span>
+    <span class="menu-item" id="update-btn">Check for Updates</span>
+  </div>
+  <main class="mac-body">
+    <div class="container">
+      <h1>Audio Extractor</h1>
+      <p>Paste a YouTube URL below to extract high-quality audio directly to your NAS.</p>
+
+      <form class="row" id="extract-form">
+        <input id="url-input" type="url" placeholder="https://youtube.com/watch?v=..." required
+          style="flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem;" />
+        <button type="submit">Extract Audio</button>
+      </form>
+      <p id="status-msg"></p>
     </div>
-    <main class="mac-body">
-      <div class="container">
-        <h1>Audio Extractor</h1>
-        <p>Paste a YouTube URL below to extract high-quality audio directly to your NAS.</p>
+    <div class="mac-bottom">
+      <div class="floppy-drive">
+        <div class="floppy-slot"></div>
+        <div class="floppy-button"></div>
+      </div>
+    </div>
+  </main>
+</body>
 
-        <form class="row" id="extract-form">
-          <input id="url-input" type="url" placeholder="https://youtube.com/watch?v=..." required style="flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem;" />
-          <button type="submit">Extract Audio</button>
-        </form>
-        <p id="status-msg"></p>
-      </div>
-      <div class="mac-bottom">
-        <div class="floppy-drive">
-          <div class="floppy-slot"></div>
-          <div class="floppy-button"></div>
-        </div>
-      </div>
-    </main>
-  </body>
 </html>

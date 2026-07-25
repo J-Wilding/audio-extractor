@@ -59,7 +59,7 @@ pub fn engine_setup(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn update_engine(app: AppHandle) -> Result<String, String> {
+pub async fn update_engine(app: AppHandle) -> Result<String, String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let engine_path = app_dir.join("yt-dlp");
     
@@ -68,16 +68,24 @@ pub fn update_engine(app: AppHandle) -> Result<String, String> {
     }
     
     info!("Running manual engine update...");
+    info!("Executing command: {:?} -U", engine_path);
     
-    let output = Command::new(&engine_path).arg("-U").output().map_err(|e| e.to_string())?;
+    let output = Command::new(&engine_path).arg("-U").output().map_err(|e| {
+        error!("Failed to spawn update process: {}", e);
+        e.to_string()
+    })?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined_output = format!("{}\n{}", stdout, stderr).trim().to_string();
 
     if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+        info!("Manual engine update finished successfully. (Exit status 0)");
+        info!("yt-dlp output:\n{}", combined_output);
+        Ok(combined_output)
     } else {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("{}\n{}", stdout, stderr).trim().to_string())
+        error!("Manual engine update failed with status: {}", output.status);
+        error!("yt-dlp output:\n{}", combined_output);
+        Err(combined_output)
     }
 }
