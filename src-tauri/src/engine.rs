@@ -46,12 +46,7 @@ pub fn engine_setup(app: AppHandle) {
                 error!("Network request to download yt-dlp failed.");
             }
         } else {
-            info!("yt-dlp executable found at {:?}. Checking for updates...", engine_path);
-            let status = Command::new(&engine_path).arg("-U").status();
-            match status {
-                Ok(s) => info!("yt-dlp update process finished with status: {}", s),
-                Err(e) => error!("Failed to run yt-dlp update: {}", e),
-            }
+            info!("yt-dlp executable found at {:?}. Skipping automatic update check.", engine_path);
         }
 
         // Update state and notify UI
@@ -61,4 +56,28 @@ pub fn engine_setup(app: AppHandle) {
         let _ = app.emit("engine-status", "Ready");
         info!("Engine lifecycle complete. Engine is locked and ready.");
     });
+}
+
+#[tauri::command]
+pub fn update_engine(app: AppHandle) -> Result<String, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let engine_path = app_dir.join("yt-dlp");
+    
+    if !engine_path.exists() {
+        return Err("Engine not found. Restart app to download.".to_string());
+    }
+    
+    info!("Running manual engine update...");
+    
+    let output = Command::new(&engine_path).arg("-U").output().map_err(|e| e.to_string())?;
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Ok(format!("{}\n{}", stdout, stderr).trim().to_string())
+    } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("{}\n{}", stdout, stderr).trim().to_string())
+    }
 }

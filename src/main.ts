@@ -59,4 +59,16 @@ window.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     extractAudio();
   });
+
+  document.querySelector("#update-btn")?.addEventListener("click", async () => {
+    if (statusMsgEl) {
+      statusMsgEl.innerHTML = `<span class="spinner"></span> Checking for updates...`;
+    }
+    try {
+      const result = await invoke<string>("update_engine");
+      if (statusMsgEl) statusMsgEl.innerHTML = `✅ ${result}`;
+    } catch (e) {
+      if (statusMsgEl) statusMsgEl.innerHTML = `❌ Error updating: ${e}`;
+    }
+  });
 });

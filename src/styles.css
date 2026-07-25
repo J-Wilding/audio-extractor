@@ -22,6 +22,39 @@ body {
   box-sizing: border-box;
 }
 
+.mac-menu-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background-color: #fff;
+  border-bottom: 2px solid #000;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 16px;
+  z-index: 100;
+}
+
+.menu-item {
+  padding: 0 12px;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+}
+
+.menu-item:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+.apple-icon {
+  font-size: 18px;
+}
+
 .mac-body {
   display: flex;
   flex-direction: column;
