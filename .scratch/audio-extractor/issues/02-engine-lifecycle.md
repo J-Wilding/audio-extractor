@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] On startup, Rust spawns a background thread that checks for the `yt-dlp` binary in the app data directory.
-- [ ] If missing, it downloads the standalone executable.
-- [ ] If present, it executes `yt-dlp -U` to update it.
-- [ ] An "Engine Lock" state is maintained in Rust and communicated to the frontend.
-- [ ] The UI disables the "Extract Audio" button and shows an "Updating Engine..." message while the lock is held.
+- [x] On startup, Rust spawns a background thread that checks for the `yt-dlp` binary in the app data directory.
+- [x] If missing, it downloads the standalone executable.
+- [x] If present, it executes `yt-dlp -U` to update it.
+- [x] An "Engine Lock" state is maintained in Rust and communicated to the frontend.
+- [x] The UI disables the "Extract Audio" button and shows an "Updating Engine..." message while the lock is held.

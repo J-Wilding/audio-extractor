@@ -1,4 +1,5 @@
 mod engine;
+mod extractor;
 use std::sync::Mutex;
 use tauri::Manager;
 
@@ -22,7 +23,10 @@ pub fn run() {
             engine::engine_setup(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_engine_status])
+        .invoke_handler(tauri::generate_handler![
+            get_engine_status,
+            extractor::start_extraction
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

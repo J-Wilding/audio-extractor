@@ -5,12 +5,23 @@ let urlInputEl: HTMLInputElement | null;
 let statusMsgEl: HTMLElement | null;
 let extractBtnEl: HTMLButtonElement | null;
 
-function extractAudio() {
-  if (urlInputEl) {
+async function extractAudio() {
+  if (urlInputEl && statusMsgEl) {
     const url = urlInputEl.value;
     console.log("Extracting audio for URL:", url);
-    if (statusMsgEl) {
-      statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...`;
+    
+    statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...`;
+    if (extractBtnEl) extractBtnEl.disabled = true;
+
+    try {
+      const result = await invoke<string>("start_extraction", { url });
+      statusMsgEl.innerHTML = `✅ ${result}`;
+      urlInputEl.value = "";
+    } catch (e) {
+      console.error(e);
+      statusMsgEl.innerHTML = `❌ Error: ${e}`;
+    } finally {
+      if (extractBtnEl) extractBtnEl.disabled = false;
     }
   }
 }
