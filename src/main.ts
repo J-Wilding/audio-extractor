@@ -13,10 +13,32 @@ async function extractAudio() {
     statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...\n`;
     if (extractBtnEl) extractBtnEl.disabled = true;
 
+    const progressContainer = document.getElementById("progress-container");
+    const progressText = document.getElementById("progress-text");
+    const progressPercent = document.getElementById("progress-percent");
+    const progressFill = document.getElementById("progress-fill");
+
+    if (progressContainer) progressContainer.style.display = "block";
+    if (progressText) progressText.innerText = "Downloading...";
+    if (progressPercent) progressPercent.innerText = "0%";
+    if (progressFill) progressFill.style.width = "0%";
+
     const unlisten = await listen<string>("extraction-progress", (event) => {
       if (statusMsgEl) {
         statusMsgEl.insertAdjacentText('beforeend', event.payload + "\n");
         statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
+
+        const matchPercent = event.payload.match(/\[download\]\s+(\d+\.?\d*)%/);
+        if (matchPercent && progressPercent && progressFill) {
+          const percent = matchPercent[1];
+          progressPercent.innerText = `${percent}%`;
+          progressFill.style.width = `${percent}%`;
+        }
+
+        const matchItem = event.payload.match(/\[download\] Downloading (?:video|item) (\d+) of (\d+)/i);
+        if (matchItem && progressText) {
+          progressText.innerText = `Downloading Track ${matchItem[1]} of ${matchItem[2]}...`;
+        }
       }
     });
 

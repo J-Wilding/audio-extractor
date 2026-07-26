@@ -29,7 +29,13 @@ pub async fn start_extraction(app: AppHandle, url: String) -> Result<String, Str
     info!("Starting extraction process for URL: {}", url);
     debug!("Using Output Template: {}", output_template);
 
+    // GUI apps on macOS don't inherit the user's shell PATH, so Homebrew binaries are often missing.
+    // We inject the standard Apple Silicon and Intel Homebrew paths so yt-dlp can find ffmpeg.
+    let current_path = std::env::var("PATH").unwrap_or_default();
+    let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+
     let mut child = Command::new(&engine_path)
+        .env("PATH", new_path)
         .arg("-x")
         .arg("--audio-format")
         .arg("m4a")
