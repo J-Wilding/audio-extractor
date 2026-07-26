@@ -1,6 +1,6 @@
 use std::path::Path;
-use std::process::Command;
-use tauri::{AppHandle, Manager};
+use std::process::{Command, Stdio};
+use tauri::{AppHandle, Manager, Emitter};
 use log::{info, error, debug, warn};
 
 #[tauri::command]
@@ -29,7 +29,7 @@ pub async fn start_extraction(app: AppHandle, url: String) -> Result<String, Str
     info!("Starting extraction process for URL: {}", url);
     debug!("Using Output Template: {}", output_template);
 
-    let result = Command::new(&engine_path)
+    let mut child = Command::new(&engine_path)
         .arg("-x")
         .arg("--audio-format")
         .arg("m4a")
@@ -37,27 +37,80 @@ pub async fn start_extraction(app: AppHandle, url: String) -> Result<String, Str
         .arg("-o")
         .arg(output_template)
         .arg(&url)
-        .output();
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| {
+            error!("Failed to even spawn the engine subprocess: {}", e);
+            format!("Failed to spawn engine: {}", e)
+        })?;
 
-    match result {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let combined = format!("{}\n{}", stdout, stderr).trim().to_string();
-            
-            if output.status.success() {
-                info!("Extraction process finished successfully.");
-                info!("yt-dlp extraction output:\n{}", combined);
-                Ok("Extraction completed successfully.".to_string())
+    let stdout = child.stdout.take().expect("Failed to open stdout");
+    let stderr = child.stderr.take().expect("Failed to open stderr");
+
+    let app_clone1 = app.clone();
+    let stdout_handle = std::thread::spawn(move || {
+        use std::io::{Read, BufReader};
+        let mut reader = BufReader::new(stdout);
+        let mut buf = Vec::new();
+        let mut buffer = [0; 1];
+        while let Ok(n) = reader.read(&mut buffer) {
+            if n == 0 {
+                break;
+            }
+            let c = buffer[0];
+            if c == b'\n' || c == b'\r' {
+                if !buf.is_empty() {
+                    let s = String::from_utf8_lossy(&buf).to_string();
+                    let _ = app_clone1.emit("extraction-progress", s);
+                    buf.clear();
+                }
             } else {
-                error!("Extraction failed with exit code {}", output.status);
-                error!("yt-dlp extraction output:\n{}", combined);
-                Err(format!("Extraction failed:\n{}", combined))
+                buf.push(c);
             }
         }
-        Err(e) => {
-            error!("Failed to even spawn the engine subprocess: {}", e);
-            Err(format!("Failed to spawn engine: {}", e))
+        if !buf.is_empty() {
+            let s = String::from_utf8_lossy(&buf).to_string();
+            let _ = app_clone1.emit("extraction-progress", s);
         }
+    });
+
+    let app_clone2 = app.clone();
+    let stderr_handle = std::thread::spawn(move || {
+        use std::io::{Read, BufReader};
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        let mut buffer = [0; 1];
+        while let Ok(n) = reader.read(&mut buffer) {
+            if n == 0 {
+                break;
+            }
+            let c = buffer[0];
+            if c == b'\n' || c == b'\r' {
+                if !buf.is_empty() {
+                    let s = String::from_utf8_lossy(&buf).to_string();
+                    let _ = app_clone2.emit("extraction-progress", s);
+                    buf.clear();
+                }
+            } else {
+                buf.push(c);
+            }
+        }
+        if !buf.is_empty() {
+            let s = String::from_utf8_lossy(&buf).to_string();
+            let _ = app_clone2.emit("extraction-progress", s);
+        }
+    });
+
+    let status = child.wait().map_err(|e| format!("Failed to wait on engine: {}", e))?;
+    let _ = stdout_handle.join();
+    let _ = stderr_handle.join();
+
+    if status.success() {
+        info!("Extraction process finished successfully.");
+        Ok("Extraction completed successfully.".to_string())
+    } else {
+        error!("Extraction failed with exit code {}", status);
+        Err(format!("Extraction failed with exit code {}", status))
     }
 }

@@ -10,17 +10,27 @@ async function extractAudio() {
     const url = urlInputEl.value;
     console.log("Extracting audio for URL:", url);
 
-    statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...`;
+    statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...\n`;
     if (extractBtnEl) extractBtnEl.disabled = true;
+
+    const unlisten = await listen<string>("extraction-progress", (event) => {
+      if (statusMsgEl) {
+        statusMsgEl.insertAdjacentText('beforeend', event.payload + "\n");
+        statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
+      }
+    });
 
     try {
       const result = await invoke<string>("start_extraction", { url });
-      statusMsgEl.innerHTML = `✅ ${result}`;
+      statusMsgEl.insertAdjacentHTML('beforeend', `✅ ${result}`);
+      statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
       urlInputEl.value = "";
     } catch (e) {
       console.error(e);
-      statusMsgEl.innerHTML = `❌ Error: ${e}`;
+      statusMsgEl.insertAdjacentHTML('beforeend', `❌ Error: ${e}`);
+      statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
     } finally {
+      unlisten();
       if (extractBtnEl) extractBtnEl.disabled = false;
     }
   }
