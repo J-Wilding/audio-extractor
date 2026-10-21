@@ -48,6 +48,19 @@ async fn trigger_plex_scan(app: AppHandle) -> Result<String, String> {
     Ok("Plex library scan triggered successfully.".to_string())
 }
 
+#[tauri::command]
+fn get_app_config(app: AppHandle) -> Result<config::AppConfig, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(config::load_config(&app_dir))
+}
+
+#[tauri::command]
+fn save_app_config(app: AppHandle, config: config::AppConfig) -> Result<String, String> {
+    let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    config::save_config(&app_dir, &config)?;
+    Ok("Configuration saved successfully.".to_string())
+}
+
 /// Connects the Browser Bridge to the running Tauri app.
 struct TauriBridgeHost {
     app: AppHandle,
@@ -145,7 +158,9 @@ pub fn run() {
             extractor::start_extraction,
             engine::update_engine,
             resize_window,
-            trigger_plex_scan
+            trigger_plex_scan,
+            get_app_config,
+            save_app_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

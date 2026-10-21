@@ -21,6 +21,57 @@ interface BridgeInfo {
   error: string | null;
 }
 
+interface AppConfig {
+  plex_url: string;
+  plex_section_id: string;
+  plex_token: string | null;
+  mac_music_root: string;
+  plex_music_root: string;
+  playlists_dir: string;
+}
+
+async function openSettingsModal() {
+  const modal = document.getElementById("settings-modal");
+  if (!modal) return;
+  try {
+    const cfg = await invoke<AppConfig>("get_app_config");
+    (document.getElementById("cfg-plex-token") as HTMLInputElement).value = cfg.plex_token || "";
+    (document.getElementById("cfg-plex-url") as HTMLInputElement).value = cfg.plex_url || "";
+    (document.getElementById("cfg-section-id") as HTMLInputElement).value = cfg.plex_section_id || "";
+    (document.getElementById("cfg-mac-music-root") as HTMLInputElement).value = cfg.mac_music_root || "";
+    (document.getElementById("cfg-plex-music-root") as HTMLInputElement).value = cfg.plex_music_root || "";
+    (document.getElementById("cfg-playlists-dir") as HTMLInputElement).value = cfg.playlists_dir || "";
+    modal.style.display = "flex";
+  } catch (err) {
+    console.error("Failed to load settings:", err);
+  }
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById("settings-modal");
+  if (modal) modal.style.display = "none";
+}
+
+async function saveSettingsFromModal() {
+  const tokenVal = (document.getElementById("cfg-plex-token") as HTMLInputElement).value.trim();
+  const cfg: AppConfig = {
+    plex_token: tokenVal.length > 0 ? tokenVal : null,
+    plex_url: (document.getElementById("cfg-plex-url") as HTMLInputElement).value.trim(),
+    plex_section_id: (document.getElementById("cfg-section-id") as HTMLInputElement).value.trim(),
+    mac_music_root: (document.getElementById("cfg-mac-music-root") as HTMLInputElement).value.trim(),
+    plex_music_root: (document.getElementById("cfg-plex-music-root") as HTMLInputElement).value.trim(),
+    playlists_dir: (document.getElementById("cfg-playlists-dir") as HTMLInputElement).value.trim(),
+  };
+
+  try {
+    const res = await invoke<string>("save_app_config", { config: cfg });
+    closeSettingsModal();
+    if (statusMsgEl) statusMsgEl.innerHTML = `✅ ${res}`;
+  } catch (err) {
+    alert(`Failed to save settings: ${err}`);
+  }
+}
+
 /** Resets the progress UI for a new job. Shared by GUI and Browser Bridge jobs. */
 function startProgressUi(label: string) {
   if (statusMsgEl) statusMsgEl.innerHTML = `<span class="spinner"></span> ${label}\n`;
@@ -177,6 +228,19 @@ window.addEventListener("DOMContentLoaded", () => {
     } catch (e) {
       if (statusMsgEl) statusMsgEl.innerHTML = `❌ Error scanning Plex: ${e}`;
     }
+  });
+
+  document.querySelector("#settings-btn")?.addEventListener("click", () => {
+    openSettingsModal();
+  });
+  document.querySelector("#close-settings-btn")?.addEventListener("click", () => {
+    closeSettingsModal();
+  });
+  document.querySelector("#cancel-settings-btn")?.addEventListener("click", () => {
+    closeSettingsModal();
+  });
+  document.querySelector("#save-settings-btn")?.addEventListener("click", () => {
+    saveSettingsFromModal();
   });
 
   document.querySelector("#update-btn")?.addEventListener("click", async () => {

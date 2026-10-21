@@ -257,3 +257,66 @@ button:active {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+}
+
+.modal-box {
+  background-color: #fff;
+  border: 2px solid #000;
+  box-shadow: 4px 4px 0 #000;
+  width: 480px;
+  max-width: 90vw;
+  box-sizing: border-box;
+}
+
+.modal-header {
+  background-color: #000;
+  color: #fff;
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  font-family: inherit;
+}
+
+.modal-content {
+  padding: 16px;
+  font-size: 18px;
+}
+
+.modal-content label {
+  display: block;
+  font-weight: bold;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border: 2px solid #000;
+  font-family: inherit;
+  font-size: 16px;
+}

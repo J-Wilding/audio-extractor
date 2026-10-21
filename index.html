@@ -19,6 +19,7 @@
     <span class="menu-item" id="update-btn">Check for Updates</span>
     <span class="menu-item" id="bridge-btn">Browser Bridge</span>
     <span class="menu-item" id="plex-scan-btn">Scan Plex</span>
+    <span class="menu-item" id="settings-btn">Settings ⚙️</span>
   </div>
   <main class="mac-body">
     <div class="container">
@@ -50,6 +51,39 @@
       </div>
     </div>
   </main>
+
+  <div id="settings-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>Audio Extractor Settings</span>
+        <button id="close-settings-btn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-content">
+        <label for="cfg-plex-token">Plex Token</label>
+        <input type="password" id="cfg-plex-token" placeholder="Paste your Plex token..." />
+
+        <label for="cfg-plex-url">Plex Server URL</label>
+        <input type="text" id="cfg-plex-url" />
+
+        <label for="cfg-section-id">Plex Music Section ID</label>
+        <input type="text" id="cfg-section-id" />
+
+        <label for="cfg-mac-music-root">Mac Music Path</label>
+        <input type="text" id="cfg-mac-music-root" />
+
+        <label for="cfg-plex-music-root">Plex Server Music Path</label>
+        <input type="text" id="cfg-plex-music-root" />
+
+        <label for="cfg-playlists-dir">Playlists Output Directory</label>
+        <input type="text" id="cfg-playlists-dir" />
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.2rem;">
+          <button type="button" id="cancel-settings-btn">Cancel</button>
+          <button type="button" id="save-settings-btn" style="background-color: #000; color: #fff;">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>
