@@ -54,9 +54,14 @@ function closeSettingsModal() {
 
 async function saveSettingsFromModal() {
   const tokenVal = (document.getElementById("cfg-plex-token") as HTMLInputElement).value.trim();
+  let plexUrl = (document.getElementById("cfg-plex-url") as HTMLInputElement).value.trim();
+  if (plexUrl && !plexUrl.startsWith("http://") && !plexUrl.startsWith("https://")) {
+    plexUrl = `http://${plexUrl}`;
+  }
+
   const cfg: AppConfig = {
     plex_token: tokenVal.length > 0 ? tokenVal : null,
-    plex_url: (document.getElementById("cfg-plex-url") as HTMLInputElement).value.trim(),
+    plex_url: plexUrl,
     plex_section_id: (document.getElementById("cfg-section-id") as HTMLInputElement).value.trim(),
     mac_music_root: (document.getElementById("cfg-mac-music-root") as HTMLInputElement).value.trim(),
     plex_music_root: (document.getElementById("cfg-plex-music-root") as HTMLInputElement).value.trim(),

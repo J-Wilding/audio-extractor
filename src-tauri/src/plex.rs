@@ -36,6 +36,8 @@ pub fn sanitize_filename(name: &str) -> String {
     }
 }
 
+pub use crate::config::normalize_plex_url;
+
 /// Translates a local Mac file path into its equivalent Plex server path using prefix replacement.
 pub fn mac_to_plex_path(mac_path: &str, mac_root: &str, plex_root: &str) -> String {
     let norm_mac = mac_path.trim_end_matches('/');
@@ -99,7 +101,8 @@ pub fn write_playlist_m3u(
 /// Triggers a Plex library section refresh.
 pub async fn trigger_plex_refresh(config: &AppConfig) -> Result<(), String> {
     let token = config.plex_token.as_deref().ok_or("Plex token is not configured.")?;
-    let url = format!("{}/library/sections/{}/refresh", config.plex_url.trim_end_matches('/'), config.plex_section_id);
+    let base_url = normalize_plex_url(&config.plex_url);
+    let url = format!("{}/library/sections/{}/refresh", base_url, config.plex_section_id);
 
     info!("Triggering Plex library scan at {}", url);
     let client = reqwest::Client::new();
@@ -123,7 +126,8 @@ pub async fn trigger_plex_refresh(config: &AppConfig) -> Result<(), String> {
 /// Checks whether the Plex library section is currently refreshing/scanning.
 pub async fn is_section_refreshing(config: &AppConfig) -> bool {
     let Some(token) = config.plex_token.as_deref() else { return false };
-    let url = format!("{}/library/sections", config.plex_url.trim_end_matches('/'));
+    let base_url = normalize_plex_url(&config.plex_url);
+    let url = format!("{}/library/sections", base_url);
 
     let client = reqwest::Client::new();
     let Ok(res) = client.get(&url).header("X-Plex-Token", token).send().await else {
@@ -163,11 +167,11 @@ pub async fn wait_for_plex_refresh(config: &AppConfig, timeout_secs: u64) {
 /// Uploads/imports an M3U file into Plex with retries.
 pub async fn upload_playlist_to_plex(plex_m3u_path: &str, config: &AppConfig) -> Result<(), String> {
     let token = config.plex_token.as_deref().ok_or("Plex token is not configured.")?;
-    let base_url = config.plex_url.trim_end_matches('/');
+    let base_url = normalize_plex_url(&config.plex_url);
     
     let mut url = match url::Url::parse(&format!("{}/playlists/upload", base_url)) {
         Ok(u) => u,
-        Err(e) => return Err(format!("Invalid Plex base URL: {}", e)),
+        Err(e) => return Err(format!("Invalid Plex base URL ({}): {}", base_url, e)),
     };
     
     url.query_pairs_mut()

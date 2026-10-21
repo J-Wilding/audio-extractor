@@ -9,7 +9,8 @@ use crate::config::AppConfig;
 use crate::engine::EngineLock;
 use crate::plex::{self, PlaylistBatch, TrackMetadata};
 
-/// The NAS Root where all extracted audio is routed (see CONTEXT.md).
+/// The default NAS Root where all extracted audio is routed (see CONTEXT.md).
+#[allow(dead_code)]
 pub const NAS_ROOT: &str = "/Volumes/data/Media/Music/";
 
 pub const TRACK_DELIM_PREFIX: &str = "YTDLM_TRACK:::";
