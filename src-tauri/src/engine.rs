@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tauri::{AppHandle, Manager, Emitter};
 use std::os::unix::fs::PermissionsExt;
 use log::{info, debug, error};
@@ -10,8 +10,28 @@ pub struct EngineState {
     pub is_ready: Mutex<bool>,
 }
 
+/// The Engine Lock (see CONTEXT.md): held while the Engine is being downloaded
+/// or updated, and for the duration of every extraction job. This both prevents
+/// downloads from running against a half-written Engine and serializes jobs
+/// coming from any entry point (GUI, Browser Bridge).
+///
+/// Cheap to clone; all clones share the same underlying lock.
+#[derive(Default, Clone)]
+pub struct EngineLock(Arc<Mutex<()>>);
+
+impl EngineLock {
+    /// Blocks until the lock is available. A poisoned lock (a previous job
+    /// panicked) is recovered, since the guarded data is `()`.
+    pub fn acquire(&self) -> MutexGuard<'_, ()> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
 pub fn engine_setup(app: AppHandle) {
     std::thread::spawn(move || {
+        let lock = app.state::<EngineLock>();
+        let _guard = lock.acquire();
+
         // Emit initial updating status
         let _ = app.emit("engine-status", "Updating Engine...");
 
@@ -70,7 +90,16 @@ pub async fn update_engine(app: AppHandle) -> Result<String, String> {
     info!("Running manual engine update...");
     info!("Executing command: {:?} -U", engine_path);
     
-    let output = Command::new(&engine_path).arg("-U").output().map_err(|e| {
+    // Take the Engine Lock off the async runtime so an in-flight extraction
+    // finishes before the binary is replaced.
+    let output = tauri::async_runtime::spawn_blocking(move || {
+        let lock = app.state::<EngineLock>();
+        let _guard = lock.acquire();
+        Command::new(&engine_path).arg("-U").output()
+    })
+    .await
+    .map_err(|e| format!("Engine update task panicked: {}", e))?
+    .map_err(|e| {
         error!("Failed to spawn update process: {}", e);
         e.to_string()
     })?;

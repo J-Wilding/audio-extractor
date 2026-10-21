@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Extractor Options</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      width: 320px;
+      background: #f7f7f9;
+      color: #222;
+      box-sizing: border-box;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #555;
+    }
+    input[type="text"], input[type="number"], input[type="password"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+    }
+    input:focus {
+      outline: none;
+      border-color: #2b6cb0;
+      box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.2);
+    }
+    .hint {
+      font-size: 11px;
+      color: #777;
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+    button {
+      width: 100%;
+      padding: 8px 12px;
+      background: #2b6cb0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2c5282;
+    }
+    #status {
+      margin-top: 8px;
+      font-size: 12px;
+      text-align: center;
+      min-height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>⚙️ Bridge Settings</h2>
+  
+  <div class="field">
+    <label for="port">Local Server Port</label>
+    <input type="number" id="port" value="47821" min="1024" max="65535">
+    <div class="hint">Default is 47821. Must match your Audio Extractor bridge port.</div>
+  </div>
+
+  <div class="field">
+    <label for="token">Bridge Token</label>
+    <input type="password" id="token" placeholder="Paste 48-character token">
+    <div class="hint">In the Audio Extractor menu, click <b>Browser Bridge</b> to copy your token to clipboard.</div>
+  </div>
+
+  <button id="save-btn">Save Settings</button>
+  <div id="status"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

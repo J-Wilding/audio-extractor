@@ -5,57 +5,125 @@ let urlInputEl: HTMLInputElement | null;
 let statusMsgEl: HTMLElement | null;
 let extractBtnEl: HTMLButtonElement | null;
 
+/** Mirrors `bridge::Job` in src-tauri/src/bridge.rs. */
+interface BridgeJob {
+  id: number;
+  url: string;
+  status: "queued" | "running" | "succeeded" | "failed";
+  progress: string | null;
+  message: string | null;
+}
+
+/** Mirrors `BridgeInfo` in src-tauri/src/lib.rs. */
+interface BridgeInfo {
+  port: number;
+  token: string | null;
+  error: string | null;
+}
+
+/** Resets the progress UI for a new job. Shared by GUI and Browser Bridge jobs. */
+function startProgressUi(label: string) {
+  if (statusMsgEl) statusMsgEl.innerHTML = `<span class="spinner"></span> ${label}\n`;
+  if (extractBtnEl) extractBtnEl.disabled = true;
+
+  const progressContainer = document.getElementById("progress-container");
+  const progressText = document.getElementById("progress-text");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressFill = document.getElementById("progress-fill");
+
+  if (progressContainer) progressContainer.style.display = "block";
+  if (progressText) progressText.innerText = "Downloading...";
+  if (progressPercent) progressPercent.innerText = "0%";
+  if (progressFill) progressFill.style.width = "0%";
+}
+
+/** Handles one Engine output line (from either entry point). */
+function onProgressLine(line: string) {
+  if (!statusMsgEl) return;
+  const progressText = document.getElementById("progress-text");
+  const progressPercent = document.getElementById("progress-percent");
+  const progressFill = document.getElementById("progress-fill");
+
+  statusMsgEl.insertAdjacentText('beforeend', line + "\n");
+  statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
+
+  const matchPercent = line.match(/\[download\]\s+(\d+\.?\d*)%/);
+  if (matchPercent && progressPercent && progressFill) {
+    const percent = matchPercent[1];
+    progressPercent.innerText = `${percent}%`;
+    progressFill.style.width = `${percent}%`;
+  }
+
+  const matchItem = line.match(/\[download\] Downloading (?:video|item) (\d+) of (\d+)/i);
+  if (matchItem && progressText) {
+    progressText.innerText = `Downloading Track ${matchItem[1]} of ${matchItem[2]}...`;
+  }
+}
+
+function finishProgressUi(ok: boolean, message: string) {
+  if (statusMsgEl) {
+    if (ok) {
+      statusMsgEl.insertAdjacentHTML('beforeend', `✅ `);
+      statusMsgEl.insertAdjacentText('beforeend', message);
+    } else {
+      statusMsgEl.insertAdjacentHTML('beforeend', `❌ `);
+      statusMsgEl.insertAdjacentText('beforeend', `Error: ${message}`);
+    }
+    statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
+  }
+  if (extractBtnEl) extractBtnEl.disabled = false;
+}
+
 async function extractAudio() {
   if (urlInputEl && statusMsgEl) {
     const url = urlInputEl.value;
     console.log("Extracting audio for URL:", url);
 
-    statusMsgEl.innerHTML = `<span class="spinner"></span> Downloading...\n`;
-    if (extractBtnEl) extractBtnEl.disabled = true;
-
-    const progressContainer = document.getElementById("progress-container");
-    const progressText = document.getElementById("progress-text");
-    const progressPercent = document.getElementById("progress-percent");
-    const progressFill = document.getElementById("progress-fill");
-
-    if (progressContainer) progressContainer.style.display = "block";
-    if (progressText) progressText.innerText = "Downloading...";
-    if (progressPercent) progressPercent.innerText = "0%";
-    if (progressFill) progressFill.style.width = "0%";
-
-    const unlisten = await listen<string>("extraction-progress", (event) => {
-      if (statusMsgEl) {
-        statusMsgEl.insertAdjacentText('beforeend', event.payload + "\n");
-        statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
-
-        const matchPercent = event.payload.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (matchPercent && progressPercent && progressFill) {
-          const percent = matchPercent[1];
-          progressPercent.innerText = `${percent}%`;
-          progressFill.style.width = `${percent}%`;
-        }
-
-        const matchItem = event.payload.match(/\[download\] Downloading (?:video|item) (\d+) of (\d+)/i);
-        if (matchItem && progressText) {
-          progressText.innerText = `Downloading Track ${matchItem[1]} of ${matchItem[2]}...`;
-        }
-      }
-    });
+    startProgressUi("Downloading...");
 
     try {
       const result = await invoke<string>("start_extraction", { url });
-      statusMsgEl.insertAdjacentHTML('beforeend', `✅ ${result}`);
-      statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
+      finishProgressUi(true, result);
       urlInputEl.value = "";
     } catch (e) {
       console.error(e);
-      statusMsgEl.insertAdjacentHTML('beforeend', `❌ Error: ${e}`);
-      statusMsgEl.scrollTop = statusMsgEl.scrollHeight;
-    } finally {
-      unlisten();
-      if (extractBtnEl) extractBtnEl.disabled = false;
+      finishProgressUi(false, String(e));
     }
   }
+}
+
+/** Reflects jobs submitted by the browser extension in the main window. */
+async function setupBridgeJobs() {
+  await listen<BridgeJob>("bridge-job", (event) => {
+    const job = event.payload;
+    if (job.status === "running") {
+      startProgressUi("Downloading (from browser)...");
+      onProgressLine(job.url);
+    } else if (job.status === "succeeded" || job.status === "failed") {
+      finishProgressUi(job.status === "succeeded", job.message ?? "");
+    }
+  });
+}
+
+/** Shows the Bridge port/token and copies the token for the extension's options page. */
+async function showBridgeInfo() {
+  if (!statusMsgEl) return;
+  const info = await invoke<BridgeInfo>("get_bridge_info");
+  if (info.error || !info.token) {
+    statusMsgEl.innerText = `❌ ${info.error ?? "Browser Bridge is not running."}`;
+    return;
+  }
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(info.token);
+    copied = true;
+  } catch (e) {
+    console.error("Clipboard write failed:", e);
+  }
+  statusMsgEl.innerText =
+    `Browser Bridge: http://127.0.0.1:${info.port}\n` +
+    `Token: ${info.token}\n` +
+    (copied ? "✅ Token copied to clipboard. Paste it into the extension's options." : "");
 }
 
 async function setupEngineLock() {
@@ -86,10 +154,29 @@ window.addEventListener("DOMContentLoaded", () => {
   extractBtnEl = document.querySelector("button[type='submit']");
 
   setupEngineLock();
+  setupBridgeJobs();
+  // One global listener for Engine output, whichever entry point started the job.
+  listen<string>("extraction-progress", (event) => onProgressLine(event.payload));
 
   document.querySelector("#extract-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
     extractAudio();
+  });
+
+  document.querySelector("#bridge-btn")?.addEventListener("click", () => {
+    showBridgeInfo();
+  });
+
+  document.querySelector("#plex-scan-btn")?.addEventListener("click", async () => {
+    if (statusMsgEl) {
+      statusMsgEl.innerHTML = `<span class="spinner"></span> Triggering Plex library scan...`;
+    }
+    try {
+      const result = await invoke<string>("trigger_plex_scan");
+      if (statusMsgEl) statusMsgEl.innerHTML = `✅ ${result}`;
+    } catch (e) {
+      if (statusMsgEl) statusMsgEl.innerHTML = `❌ Error scanning Plex: ${e}`;
+    }
   });
 
   document.querySelector("#update-btn")?.addEventListener("click", async () => {
