@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Extractor — Jobs & Live Log</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-hover: #263449;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #34d399;
+      --danger: #f87171;
+      --warn: #fbbf24;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 12.5px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      display: inline-block;
+    }
+    .conn-dot.online { background: var(--success); }
+    .conn-dot.offline { background: var(--danger); }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .icon-btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .icon-btn:hover {
+      background: #475569;
+    }
+
+    .submit-bar {
+      padding: 8px 12px;
+      background: #162032;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .submit-row {
+      display: flex;
+      gap: 6px;
+    }
+    .submit-row input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: Menlo, Monaco, Consolas, monospace;
+    }
+    .submit-row input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .submit-row select {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0 6px;
+      font-size: 11.5px;
+    }
+    .btn-primary {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #0369a1; }
+
+    #banner {
+      display: none;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #banner.info { display: block; background: #1e3a8a; color: #bfdbfe; }
+    #banner.error { display: block; background: #7f1d1d; color: #fecaca; }
+    #banner.success { display: block; background: #064e3b; color: #a7f3d0; }
+
+    .section-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    .icon-btn-subtle {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 10.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .icon-btn-subtle:hover {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .jobs-section {
+      flex: 0 0 42%;
+      min-height: 130px;
+      max-height: 50%;
+      overflow-y: auto;
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .empty-state {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 12px;
+      font-size: 12px;
+    }
+    .job-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .job-card:hover {
+      background: var(--panel-hover);
+    }
+    .job-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .job-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .job-title {
+      font-weight: 600;
+      font-size: 12.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .status-pill.running { background: #0369a1; color: #e0f2fe; }
+    .status-pill.queued { background: #334155; color: #cbd5e1; }
+    .status-pill.succeeded { background: #065f46; color: #d1fae5; }
+    .status-pill.failed { background: #991b1b; color: #fee2e2; }
+    .status-pill.cancelled { background: #475569; color: #e2e8f0; }
+
+    .cancel-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 10.5px;
+      cursor: pointer;
+    }
+    .cancel-btn:hover {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #991b1b;
+    }
+    .job-sub {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .job-bar {
+      margin-top: 6px;
+      height: 4px;
+      background: #0f172a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .job-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.15s linear;
+    }
+
+    .log-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #090d16;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: #111827;
+      border-bottom: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .log-actions {
+      display: flex;
+      gap: 6px;
+    }
+    #log-output {
+      flex: 1;
+      margin: 0;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="conn-dot" id="conn-dot" title="Server status"></span>
+      <span>Audio Extractor</span>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="plex-scan-btn" title="Trigger Plex Music library scan">Scan Plex</button>
+      <button type="button" class="icon-btn" id="popout-btn" title="Pop out into a floating window">↗ Pop out</button>
+      <button type="button" class="icon-btn" id="settings-btn" title="Server Settings">⚙️</button>
+    </div>
+  </header>
+
+  <div class="submit-bar">
+    <div class="submit-row">
+      <input type="text" id="url-input" placeholder="Paste YouTube / YouTube Music URL…">
+      <select id="mode-select" title="Extraction mode">
+        <option value="playlist">Playlist / Album</option>
+        <option value="song">Single Song</option>
+      </select>
+      <button type="button" class="btn-primary" id="submit-btn">Queue</button>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="icon-btn" id="grab-tab-btn" style="width: 100%;">
+        + Queue Active Browser Tab
+      </button>
+    </div>
+  </div>
+
+  <div id="banner"></div>
+
+  <div class="section-bar">
+    <span class="section-title">Queue & History</span>
+    <button type="button" class="icon-btn-subtle" id="clear-queue-btn" title="Clear finished and queued jobs">Clear</button>
+  </div>
+
+  <div class="jobs-section" id="jobs-list">
+    <div class="empty-state">Loading jobs…</div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <span id="log-title">Select a job to view live output</span>
+      <div class="log-actions">
+        <button type="button" class="icon-btn" id="follow-btn" style="display: none;">↓ Follow</button>
+        <button type="button" class="icon-btn" id="copy-log-btn">Copy Log</button>
+      </div>
+    </div>
+    <pre id="log-output"></pre>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

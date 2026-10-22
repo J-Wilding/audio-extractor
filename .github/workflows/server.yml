@@ -1,0 +1,105 @@
+name: Server CI & Docker Image
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "server/**"
+      - ".github/workflows/server.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - ".github/workflows/server.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/j-wilding/audio-extractor-server
+
+jobs:
+  test:
+    name: Cargo Test (server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+      - name: Run unit tests
+        working-directory: server
+        run: cargo test --locked
+
+  docker:
+    name: Build & Smoke-Test Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build local amd64 image for smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          load: true
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE }}:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test container (/health + ffmpeg)
+        run: |
+          docker run --rm --entrypoint ffmpeg ${{ env.IMAGE }}:smoke -version
+          docker run -d --name aes-smoke \
+            -p 47821:47821 \
+            -e BRIDGE_TOKEN=0123456789abcdef0123456789abcdef \
+            ${{ env.IMAGE }}:smoke
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:47821/health | grep -q '"ok":true'; then
+              echo "Health check passed"
+              docker stop aes-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs aes-smoke
+          exit 1
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Build and push multi-arch image (amd64 + arm64)
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

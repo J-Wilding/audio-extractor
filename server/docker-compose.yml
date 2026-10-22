@@ -1,0 +1,17 @@
+services:
+  audio-extractor:
+    image: ghcr.io/j-wilding/audio-extractor-server:latest
+    build: .
+    container_name: audio-extractor
+    restart: unless-stopped
+    ports:
+      - "${PORT:-47821}:47821"
+    env_file:
+      - .env
+    environment:
+      - PORT=47821
+      - MUSIC_ROOT=/music
+      - DATA_DIR=/data
+    volumes:
+      - /share/CACHEDEV1_DATA/Multimedia/Media/Music:/music
+      - ./data:/data

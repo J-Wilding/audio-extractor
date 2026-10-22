@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 *.code-workspace
+
+# Server build artifacts & runtime data
+server/target
+server/data
+.env
+server/.env

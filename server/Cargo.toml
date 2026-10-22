@@ -1,0 +1,29 @@
+[package]
+name = "audio-extractor-server"
+version = "0.2.0"
+description = "Headless Audio Extractor backend: yt-dlp job queue, Plex playlist import, HTTP API for the browser extension"
+edition = "2021"
+publish = false
+
+[lib]
+name = "audio_extractor_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "audio-extractor-server"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.8.9"
+tokio = { version = "1.54.0", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+tower-http = { version = "0.7.1", features = ["cors"] }
+reqwest = { version = "0.13.4", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2.5.8"
+log = "0.4.33"
+env_logger = "0.11.11"
+libc = "0.2"
+
+[dev-dependencies]
+tower = { version = "0.5.3", features = ["util"] }
