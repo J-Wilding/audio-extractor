@@ -18,7 +18,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ffmpeg \
         gosu \
         python3 \
-    && rm -rf /var/lib/apt/lists/*
+        unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip \
+    && unzip /tmp/deno.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/deno \
+    && rm /tmp/deno.zip
 
 COPY --from=builder /build/target/release/audio-extractor-server /usr/local/bin/audio-extractor-server
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
