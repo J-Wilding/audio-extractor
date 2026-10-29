@@ -12,6 +12,10 @@ services:
       - PORT=47821
       - MUSIC_ROOT=/music
       - DATA_DIR=/data
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+      - 10.0.0.1
     volumes:
       - /share/CACHEDEV1_DATA/Multimedia/Media/Music:/music
       - ./data:/data
