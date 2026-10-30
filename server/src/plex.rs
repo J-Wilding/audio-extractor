@@ -134,13 +134,15 @@ fn section_is_refreshing(xml: &str, section_id: &str) -> bool {
 pub async fn wait_for_plex_refresh(cfg: &PlexConfig, timeout_secs: u64) {
     let start = std::time::Instant::now();
     // Brief pause so Plex has a chance to mark the section as refreshing.
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    tokio::time::sleep(Duration::from_secs(2)).await;
     while start.elapsed().as_secs() < timeout_secs {
         if !is_section_refreshing(cfg).await {
             info!("Plex section {} scan completed.", cfg.section_id);
+            // Allow Plex a short moment to finalize database writes.
+            tokio::time::sleep(Duration::from_millis(1500)).await;
             return;
         }
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
     warn!("Timed out waiting for Plex scan to complete after {}s", timeout_secs);
 }
@@ -195,7 +197,7 @@ pub async fn handle_playlist_import(batch: PlaylistBatch, cfg: &PlexConfig) -> R
     if let Err(e) = trigger_plex_refresh(cfg).await {
         warn!("{}", e);
     }
-    wait_for_plex_refresh(cfg, 15).await;
+    wait_for_plex_refresh(cfg, 120).await;
 
     match upload_playlist_to_plex(&plex_path, cfg).await {
         Ok(()) => Ok(format!("Imported playlist '{}' into Plex.", batch.playlist_title)),
