@@ -17,8 +17,11 @@ use crate::plex::{PlaylistBatch, TrackMetadata};
 pub const TRACK_DELIM_PREFIX: &str = "YTDLM_TRACK:::";
 
 /// Output template under the music root (Metadata Routing, see CONTEXT.md).
+/// Slicing (`.80s`) ensures individual directory and filename path components
+/// never exceed POSIX filesystem limits (NAME_MAX = 255 bytes, errno 36).
+/// We also prefer `album_artist` and `artists.0` over full comma-separated credit dumps.
 pub const OUTPUT_TEMPLATE: &str =
-    "%(artist,uploader|Unknown Artist)s/%(album,playlist|Singles)s/%(playlist_index,track_number&{:02d} - |)s%(title)s.%(ext)s";
+    "%(album_artist,artists.0,artist,uploader|Unknown Artist).80s/%(album,playlist|Singles).80s/%(playlist_index,track_number&{:02d} - |)s%(title).80s.%(ext)s";
 
 /// How long a cancelled Engine gets to exit after SIGTERM before SIGKILL.
 const CANCEL_GRACE: Duration = Duration::from_secs(3);
@@ -522,5 +525,11 @@ exit 0"#,
         assert_eq!(result.unwrap_err(), ExtractError::Cancelled);
         assert!(start.elapsed() < Duration::from_secs(5), "took {:?}", start.elapsed());
         assert!(!lines.contains(&"should-not-print".to_string()));
+    }
+
+    #[test]
+    fn output_template_guards_against_long_filenames() {
+        assert!(OUTPUT_TEMPLATE.contains(".80s"), "Output template must constrain component lengths to prevent Errno 36 (File name too long)");
+        assert!(OUTPUT_TEMPLATE.starts_with("%(album_artist,artists.0,artist,uploader|Unknown Artist)"));
     }
 }
